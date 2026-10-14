@@ -2,7 +2,7 @@ services:
   - type: web
     name: control-de-equipos
     runtime: node
-    plan: starter
+    plan: 0.5c-512mb
     region: ohio
     buildCommand: npm install
     startCommand: npm start
