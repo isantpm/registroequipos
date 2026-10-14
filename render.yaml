@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: control-de-equipos
+    runtime: node
+    plan: starter
+    region: ohio
+    buildCommand: npm install
+    startCommand: npm start
+    disk:
+      name: datos-control-equipos
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_DIR
+        value: /var/data
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

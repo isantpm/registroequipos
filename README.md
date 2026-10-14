@@ -25,22 +25,41 @@ El administrador puede crear usuarios con correo y perfil. Las contraseñas se g
 
 - Inicio de sesión con un solo administrador y perfiles de registro sin límite y transferencia (máximo 3). Los encargados de registro solo envían lecturas de equipos asignados; transferencia solo cambia asignaciones.
 - Ficha de equipo con código único, marca, modelo, número de serie, intervalo de mantenimiento, horómetro inicial y umbral de alerta configurable.
+- Ciclos de mantenimiento independientes por equipo y tipo de servicio; el administrador puede agregar, editar y archivar ciclos, cada uno con su intervalo, umbral y horómetro de último servicio.
 - Importación masiva de hasta 5,000 equipos desde CSV usando la plantilla descargable del panel; la columna de usuario asignado es opcional.
 - Asignación de cada equipo a un usuario de campo desde la tabla del administrador. El servidor restringe el catálogo y los reportes de ese usuario a los equipos asignados.
-- Registro de mantenimiento con horómetro al servicio, mecánico e insumos; reinicia el ciclo desde el horómetro indicado y genera una ficha HTML imprimible.
+- Registro de mantenimiento con horómetro al servicio, tipos completados, mecánico e insumos; solo reinicia los ciclos seleccionados, conserva el evento y genera una ficha imprimible.
 - Envío de lecturas por usuarios de campo; las horas se actualizan al recibir la lectura y se conservan los reportes para revisión administrativa.
 - Panel con conteos y estados: próximo (dentro del umbral), crítico (exactamente al llegar al vencimiento) y urgente (por encima del vencimiento).
 - Confirmación o rechazo del reporte por el administrador.
+- Historial administrativo de todas las lecturas, servicios y transferencias, con búsqueda; desde cada servicio se puede volver a descargar su ficha de control.
 - Actualización del panel administrativo cada 15 segundos y acceso de cada usuario de campo restringido a sus propios reportes.
 - Ventana emergente con alertas codificadas por color; marcar “Mantenimiento realizado” registra las horas del servicio, reinicia el ciclo y quita la alerta.
 - Cada lectura requiere dos fotos JPG, PNG o WEBP (máximo 10 MB por foto). El nuevo par reemplaza las imágenes previas de ese equipo para controlar el almacenamiento.
 - El administrador puede descargar un ZIP con un libro XLSX de todos los registros y las fotos almacenadas; el libro señala los nombres de las imágenes correspondientes.
 - El inicio de sesión permite mostrar/ocultar la contraseña. Las cuentas nuevas y las restablecidas deben cambiar su clave temporal al entrar; los usuarios pueden solicitar restablecimiento usando su usuario y correo.
 - El correo provisional del administrador se envía mediante SMTP seguro. Configura `SMTP_HOST`, `SMTP_PORT` (465), `SMTP_USER`, `SMTP_PASS` y `SMTP_FROM` en `.env`, y reinicia el servidor.
+- Se generan respaldos de SQLite y fotos cada 24 horas y se pueden crear manualmente desde el panel. `BACKUP_DIR` cambia el destino y `BACKUP_INTERVAL_HOURS` ajusta la frecuencia.
+- HTTPS se activa directamente con `HTTPS_CERT_FILE` y `HTTPS_KEY_FILE`; para un dominio público se recomienda terminar TLS en un proxy inverso y mantener el servidor Node enlazado a `127.0.0.1`.
 
 ## Pendiente antes de operación real
 
-- Definir si toda lectura recibida debe actualizar el horómetro inmediatamente o solo al aprobarla.
-- Definir reglas de múltiples ciclos/tipos de mantenimiento, y qué acción registra que el mantenimiento se completó y reinicia el ciclo.
-- Terminar el historial detallado y la ficha de control que se diseñará al final.
-- Configurar HTTPS, copias de seguridad y las credenciales SMTP antes de activar el correo de recuperación.
+- Antes de abrir el servicio a usuarios externos, configurar dominio/hosting, certificado HTTPS y un destino de respaldo fuera del servidor.
+- Configurar credenciales SMTP de un proveedor compatible con TLS en puerto 465 y hacer un envío real de recuperación.
+- Al final del proyecto, cerrar el diseño visual de la ficha imprimible.
+
+## Preparación para Render
+
+El proyecto está configurado para desplegarse como un servicio web Node en Render con un disco persistente montado en `/var/data`. `render.yaml` define el servicio, la versión de Node, el directorio persistente y solicita las credenciales iniciales del administrador sin guardarlas en el repositorio. `DATA_DIR` permite que SQLite, las fotos y las copias se guarden en ese disco.
+
+Para desplegar:
+
+1. Sube el proyecto a GitHub, sin agregar `.env`, `data/` ni archivos de credenciales.
+2. En Render, crea un Blueprint desde el repositorio y revisa el servicio `control-de-equipos` del archivo `render.yaml`.
+3. Introduce `ADMIN_USER` y `ADMIN_PASSWORD` en el formulario seguro de Render. No reutilices la contraseña temporal en otros sitios; cámbiala al entrar.
+4. Al iniciar vacío, Render creará una base nueva. Para conservar el inventario local, antes del uso real hay que migrar `data/registro.db` y las fotos de `data/uploads` al disco persistente de Render.
+5. Ejecuta una sola instancia mientras SQLite esté en uso. El disco local persistente no se comparte entre instancias.
+6. Configura y verifica respaldos fuera del servicio; las copias guardadas en `/var/data/backups` comparten el mismo disco y no bastan ante una pérdida del volumen.
+7. Añade SMTP desde el panel de Render cuando tengas las credenciales del proveedor. Después valida el envío real de recuperación.
+
+Render termina HTTPS para el servicio. No cargues `HTTPS_CERT_FILE` ni `HTTPS_KEY_FILE`. El Blueprint usa un servicio pagado porque Render requiere un servicio pagado para adjuntar un disco persistente.
